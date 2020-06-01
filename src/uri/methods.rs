@@ -2,7 +2,7 @@ use super::schema::FmcApi;
 use uuid::Uuid;
 
 impl FmcApi {
-    pub(super) fn path_vec(self, address: &str, dom_uuid: Uuid) -> Vec<String> {
+    pub(super) async fn path_vec(self, address: &str, dom_uuid: Uuid) -> Vec<String> {
         let mut path: Vec<String> = Vec::new();
         path.push("https://".to_string());
         path.push(address.to_string());
@@ -68,7 +68,7 @@ impl FmcApi {
         }
     }
 
-    pub(super) fn path_string (self, address: &str, dom_uuid: Uuid) -> String {
-        self.path_vec(address, dom_uuid).join("")
+    pub(super) async fn path_string (self, address: &str, dom_uuid: Uuid) -> String {
+        self.path_vec(address, dom_uuid).await.join("")
     }
 }

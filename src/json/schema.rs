@@ -1,15 +1,40 @@
-#[macro_use]
 use serde::{Deserialize};
 
 // Core JSON blocks that are used in many places
 mod core {
     use super::*;
+
     #[derive(Deserialize, Debug)]
-    pub(super) struct Paging {
-        offset: u16,
-        limit: u16,
-        count: u16,
-        pages: u16
+    pub(super) struct Domain {
+        name: String,
+        id: String,
+        uuid: Option<String>
+    }
+
+    #[derive(Deserialize, Debug)]
+    pub(super) struct Ipv6 {
+        #[serde(alias = "enforeEUI64")]
+        enforce_eui64: bool,
+        #[serde(alias = "enforceAutoConfig")]
+        enable_auto_config: bool,
+        #[serde(alias = "enableDHCPAddrConfig")]
+        enable_dhcp_addr_config: bool,
+        #[serde(alias = "enableDHCPNonAddrConfig")]
+        enable_dhcp_nonaddr_config: bool,
+        #[serde(alias = "dadAttempts")]
+        dad_attempts: u32,
+        #[serde(alias = "nsInterval")]
+        ns_interval: u32,
+        #[serde(alias = "reachableTime")]
+        reachable_time: u32,
+        #[serde(alias = "enableRA")]
+        enable_ra: bool,
+        #[serde(alias = "raLifeTime")]
+        ra_lifetime: u32,
+        #[serde(alias = "raInterval")]
+        ra_interval: u32,
+        #[serde(alias = "enableIPV6")]
+        enable_ipv6: bool
     }
 
     #[derive(Deserialize, Debug)]
@@ -20,9 +45,29 @@ mod core {
     }
 
     #[derive(Deserialize, Debug)]
-    pub(super) struct Domain {
+    pub(super) struct LastUser {
         name: String,
-        id: String,
+        id: Option<String>,
+        #[serde(alias = "type")]
+        _type: Option<String>
+
+    }
+
+    #[derive(Deserialize, Debug)]
+    pub(super) struct MetaData {
+        #[serde(alias = "readOnly")]
+        read_only: Option<ReadOnly>,
+        #[serde(alias = "lastUser")]
+        last_user: Option<LastUser>,
+        domain: Option<Domain>
+    }
+
+    #[derive(Deserialize, Debug)]
+    pub(super) struct Paging {
+        offset: u16,
+        limit: u16,
+        count: u16,
+        pages: u16
     }
 
     #[derive(Deserialize, Debug)]
@@ -32,21 +77,11 @@ mod core {
     }
 
     #[derive(Deserialize, Debug)]
-    pub(super) struct LastUser {
-        name: String,
+    pub(super) struct SecurityZone {
+        id: String,
+        #[serde(alias = "type")]
+        _type: String,
     }
-
-    #[derive(Deserialize, Debug)]
-    pub(super) struct MetaData {
-        #[serde(alias = "readOnly")]
-        read_only: Option<ReadOnly>,
-        #[serde(alias = "lastUser")]
-        last_user: Option<LastUser>,
-        domain: Option<Domain>,
-
-    }
-
-
 }
 
 mod devices {
@@ -89,12 +124,27 @@ mod devices {
         id: String,
     }
 
+    #[derive(Deserialize, Debug)]
+    pub(super) struct EtherChannelInts {
+        links: core::Links,
+        items: Vec<EtherChannelInt>,
+        paging: core::Paging
+    }
+
+    #[derive(Deserialize, Debug)]
+    pub(super) struct EtherChannelInt {
+        links: core::Links,
+        name: String,
+        id: String
+    }
+
 }
 
 #[cfg(test)]
 mod tests { 
     use super::*;
 
+    // GET // /api/fmc_config/v1/domain/{domainUUID}/devices/devicerecords
     #[test]
     fn device_records_test() {
         let raw_string: &str = r#"{
@@ -215,6 +265,7 @@ mod tests {
         println!("{:?}\n\n", parsed);
     }
 
+    // GET /api/fmc_config/v1/domain/{domainUUID}/devices/devicerecords/{containerUUID}/physicalinterfaces
     #[test]
     fn device_phys_int_test()
     {
@@ -262,9 +313,41 @@ mod tests {
         }
         "#;
         let parsed: devices::PhysicalInterfaces = serde_json::from_str(raw_string).unwrap();
-        println!("{:?}", parsed);
+        println!("{:?}\n\n", parsed);
 
     }
 
-
+    // GET /fmc_config/v1/domain/DomainUUID/devices/devicerecords/containerUUID/etherchannelinterfaces
+    #[test]
+    fn device_etherch_int_test() {
+        let raw_str = r#"{
+            "links": {
+                "self": "/fmc_config/v1/domain/default/devices/devicerecords/containerUUID/etherchannelinterfaces?offset=0&limit=2"
+            },
+            "items": [
+                {
+                    "links": {
+                        "self": "/fmc_config/v1/domain/default/devices/devicerecords/containerUUID/etherchannelinterfaces/etherChannelIntfUUID2"
+                    },
+                    "name": "Port-channel2",
+                    "id": "etherChannelIntfUUID2"
+                },
+                {
+                    "links": {
+                        "self": "/fmc_config/v1/domain/default/devices/devicerecords/containerUUID/etherchannelinterfaces/etherChannelIntfUUID1"
+                    },
+                    "name": "Port-channel1",
+                    "id": "etherChannelIntfUUID1"
+                }
+            ],
+            "paging": {
+                "offset": 0,
+                "limit": 2,
+                "count": 2,
+                "pages": 1
+            }
+        }"#;
+        let parsed: devices::EtherChannelInts = serde_json::from_str(raw_str).unwrap();
+        println!("{:?}\n\n", parsed);
+    }
 }
