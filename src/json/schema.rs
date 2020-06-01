@@ -1,4 +1,4 @@
-use serde::{Deserialize};
+use serde::Deserialize;
 
 // Core JSON blocks that are used in many places
 mod core {
@@ -8,7 +8,7 @@ mod core {
     pub(super) struct Domain {
         name: String,
         id: String,
-        uuid: Option<String>
+        uuid: Option<String>,
     }
 
     #[derive(Deserialize, Debug)]
@@ -34,7 +34,7 @@ mod core {
         #[serde(alias = "raInterval")]
         ra_interval: u32,
         #[serde(alias = "enableIPV6")]
-        enable_ipv6: bool
+        enable_ipv6: bool,
     }
 
     #[derive(Deserialize, Debug)]
@@ -49,8 +49,7 @@ mod core {
         name: String,
         id: Option<String>,
         #[serde(alias = "type")]
-        _type: Option<String>
-
+        _type: Option<String>,
     }
 
     #[derive(Deserialize, Debug)]
@@ -59,7 +58,7 @@ mod core {
         read_only: Option<ReadOnly>,
         #[serde(alias = "lastUser")]
         last_user: Option<LastUser>,
-        domain: Option<Domain>
+        domain: Option<Domain>,
     }
 
     #[derive(Deserialize, Debug)]
@@ -67,7 +66,7 @@ mod core {
         offset: u16,
         limit: u16,
         count: u16,
-        pages: u16
+        pages: u16,
     }
 
     #[derive(Deserialize, Debug)]
@@ -95,7 +94,6 @@ mod devices {
         paging: core::Paging,
     }
 
-
     #[derive(Deserialize, Debug)]
     pub(super) struct DeviceItem {
         id: String,
@@ -112,7 +110,7 @@ mod devices {
     // /api/fmc_config/v1/domain/{domainUUID}/devices/devicerecords/{containerUUID}/physicalinterfaces
     #[derive(Deserialize, Debug)]
     pub(super) struct PhysicalInterfaces {
-        links:  core::Links,
+        links: core::Links,
         items: Vec<PhysIntItem>,
         paging: core::Paging,
     }
@@ -128,20 +126,19 @@ mod devices {
     pub(super) struct EtherChannelInts {
         links: core::Links,
         items: Vec<EtherChannelInt>,
-        paging: core::Paging
+        paging: core::Paging,
     }
 
     #[derive(Deserialize, Debug)]
     pub(super) struct EtherChannelInt {
         links: core::Links,
         name: String,
-        id: String
+        id: String,
     }
-
 }
 
 #[cfg(test)]
-mod tests { 
+mod tests {
     use super::*;
 
     // GET // /api/fmc_config/v1/domain/{domainUUID}/devices/devicerecords
@@ -267,8 +264,7 @@ mod tests {
 
     // GET /api/fmc_config/v1/domain/{domainUUID}/devices/devicerecords/{containerUUID}/physicalinterfaces
     #[test]
-    fn device_phys_int_test()
-    {
+    fn device_phys_int_test() {
         let raw_string = r#"
         {
             "links": {
@@ -314,7 +310,6 @@ mod tests {
         "#;
         let parsed: devices::PhysicalInterfaces = serde_json::from_str(raw_string).unwrap();
         println!("{:?}\n\n", parsed);
-
     }
 
     // GET /fmc_config/v1/domain/DomainUUID/devices/devicerecords/containerUUID/etherchannelinterfaces

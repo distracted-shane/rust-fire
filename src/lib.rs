@@ -1,6 +1,6 @@
 use tokio;
-mod uri;
 mod json;
+mod uri;
 
 #[cfg(test)]
 mod tests {

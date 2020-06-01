@@ -1,2 +1,2 @@
-mod schema;
 mod methods;
+mod schema;

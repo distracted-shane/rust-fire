@@ -1,3 +1,3 @@
 use uuid::Uuid;
-mod schema;
 mod methods;
+mod schema;
