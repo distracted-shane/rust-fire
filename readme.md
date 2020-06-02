@@ -1,7 +1,15 @@
 ## rust-fire
 ### Cisco FMC API Library
 
-This project provides a library to simplify interacting the with Cisco FMC API. WIP. 
+This project provides an asynchronous Rust library to simplify interacting the with Cisco FMC API. WIP. 
+
+Uses:
+* base64:               for HTTP Basic Auth encoding
+* hyper and hyper-tls:  for low-level HTTP and TLS communication
+* serde and serde-json: for deserializing JSON replies 
+* tokio:                for async, threading, and such
+* uuid:                 for uuids, duh
+
 
 Example:
 ```
