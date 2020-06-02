@@ -1,4 +1,4 @@
 use serde::Deserialize;
 
 mod json_methods;
-mod json_schema;
+pub mod json_schema;

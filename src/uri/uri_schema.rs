@@ -24,7 +24,7 @@ pub(crate) enum FmcApi {
     HttpBasicAuth,
 }
 
-#[cfg(test)]
+/*#[cfg(test)]
 mod tests {
     use super::super::Uuid;
     use super::*;
@@ -86,3 +86,4 @@ mod tests {
             "https://10.0.0.5:443/api/fmc_config/v1/domain/f3b4958c-52a1-11e7-802a-010203041506/object/integration");
     }
 }
+*/

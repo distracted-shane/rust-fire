@@ -21,7 +21,7 @@ impl FmcApi {
             Self::Devices => {
                 path.push("/api/fmc_config/v1/domain/".to_string());
                 path.push(dom_uuid);
-                path.push("/devices".to_string());
+                path.push("/devices/devicerecords".to_string());
                 path
             }
             Self::PolicyAssignments => {

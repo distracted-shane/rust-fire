@@ -1,5 +1,5 @@
 // Core JSON blocks that are used in many places
-mod core {
+pub(super) mod core {
     use super::super::Deserialize;
 
     #[derive(Deserialize, Debug)]
@@ -81,13 +81,13 @@ mod core {
     }
 }
 
-mod devices {
-    use super::super::Deserialize;
+pub(crate) mod devices {
+    use serde::Deserialize;
     use super::core;
 
     // /api/fmc_config/v1/domain/{domainUUID}/devices/devicerecords
     #[derive(Deserialize, Debug)]
-    pub(super) struct DeviceRecords {
+    pub(crate) struct DeviceRecords {
         links: core::Links,
         items: Vec<DeviceItem>,
         paging: core::Paging,
@@ -101,9 +101,9 @@ mod devices {
         links: core::Links,
         name: String,
         #[serde(alias = "hostName")]
-        host_name: String,
+        host_name: Option<String>,
         #[serde(alias = "ftdMode")]
-        ftd_mode: String,
+        ftd_mode: Option<String>,
     }
 
     // /api/fmc_config/v1/domain/{domainUUID}/devices/devicerecords/{containerUUID}/physicalinterfaces
@@ -135,7 +135,7 @@ mod devices {
         id: String,
     }
 }
-
+/*
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -345,3 +345,4 @@ mod tests {
         println!("{:#?}\n\n", parsed);
     }
 }
+*/
