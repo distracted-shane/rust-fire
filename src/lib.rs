@@ -1,6 +1,8 @@
-use tokio;
 mod json;
-mod uri;
+mod session;
+pub mod uri;
+
+type FMCUri = String;
 
 #[cfg(test)]
 mod tests {

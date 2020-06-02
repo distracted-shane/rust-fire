@@ -1,3 +1,4 @@
+use super::super::FMCUri;
 use super::schema::FmcApi;
 use uuid::Uuid;
 
@@ -98,7 +99,7 @@ impl FmcApi {
         }
     }
 
-    pub(super) async fn path_string(self, address: &str, dom_uuid: Uuid) -> String {
+    pub(crate) async fn path_string(self, address: &str, dom_uuid: Uuid) -> FMCUri {
         self.path_vec(address, dom_uuid).await.join("")
     }
 }

@@ -1,4 +1,4 @@
-pub(super) enum FmcApi {
+pub(crate) enum FmcApi {
     //Config: /api​/fmc_config​/v1​/domain​/f3b4958c-52a1-11e7-802a-010203040506​/{type}
     Devices,
     PolicyAssignments,
