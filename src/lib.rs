@@ -1,6 +1,11 @@
-mod json;
-mod session;
+pub mod json;
+pub mod session;
 pub mod uri;
+
+use base64::encode;
+use uuid::Uuid;
+use hyper::{Client, Request, Version};
+use hyper_tls::HttpsConnector;
 
 type FMCUri = String;
 

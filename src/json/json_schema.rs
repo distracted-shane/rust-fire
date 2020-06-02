@@ -1,8 +1,6 @@
-use serde::Deserialize;
-
 // Core JSON blocks that are used in many places
 mod core {
-    use super::*;
+    use super::super::Deserialize;
 
     #[derive(Deserialize, Debug)]
     pub(super) struct Domain {
@@ -84,7 +82,8 @@ mod core {
 }
 
 mod devices {
-    use super::*;
+    use super::super::Deserialize;
+    use super::core;
 
     // /api/fmc_config/v1/domain/{domainUUID}/devices/devicerecords
     #[derive(Deserialize, Debug)]
@@ -259,7 +258,7 @@ mod tests {
           "#;
 
         let parsed: devices::DeviceRecords = serde_json::from_str(raw_string).unwrap();
-        println!("{:?}\n\n", parsed);
+        println!("{:#?}\n\n", parsed);
     }
 
     // GET /api/fmc_config/v1/domain/{domainUUID}/devices/devicerecords/{containerUUID}/physicalinterfaces
@@ -309,7 +308,7 @@ mod tests {
         }
         "#;
         let parsed: devices::PhysicalInterfaces = serde_json::from_str(raw_string).unwrap();
-        println!("{:?}\n\n", parsed);
+        println!("{:#?}\n\n", parsed);
     }
 
     // GET /fmc_config/v1/domain/DomainUUID/devices/devicerecords/containerUUID/etherchannelinterfaces
@@ -343,6 +342,6 @@ mod tests {
             }
         }"#;
         let parsed: devices::EtherChannelInts = serde_json::from_str(raw_str).unwrap();
-        println!("{:?}\n\n", parsed);
+        println!("{:#?}\n\n", parsed);
     }
 }

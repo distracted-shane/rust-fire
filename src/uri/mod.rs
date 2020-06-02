@@ -1,2 +1,4 @@
-mod methods;
-pub mod schema;
+use super::*;
+
+mod uri_methods;
+pub mod uri_schema;

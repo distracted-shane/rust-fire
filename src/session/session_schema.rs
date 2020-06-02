@@ -1,8 +1,7 @@
-use super::super::FMCUri;
-use super::*;
+use super::{FMCUri, Request}; // Local
 
 #[derive(Debug)]
-pub enum RequestType {
+pub(super) enum RequestType {
     GET,
     POST,
     PUT,
@@ -22,4 +21,5 @@ pub(super) struct FmcRequest {
     pub(super) username: Option<String>,
     pub(super) secret: Option<AuthCreds>,
     pub(super) uri: FMCUri,
+    pub(super) req: Option<Request<hyper::Body>>,
 }

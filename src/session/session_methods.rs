@@ -1,6 +1,8 @@
-use super::super::{uri::schema::FmcApi, FMCUri};
-use super::*;
-use schema::{AuthCreds, FmcRequest, RequestType};
+use super::HttpsConnector;
+use super::{Client, Request, Version}; // From crate: Hyper // From crate: Hyper-TLS
+
+use super::{session_schema, FMCUri, FmcApi}; // Local
+use session_schema::{AuthCreds, FmcRequest, RequestType}; // Local
 
 impl FmcRequest {
     async fn get(uri: FMCUri) -> Self {
@@ -9,6 +11,7 @@ impl FmcRequest {
             username: None,
             secret: None,
             uri,
+            req: None,
         }
     }
     async fn post(uri: FMCUri) -> Self {
@@ -17,6 +20,7 @@ impl FmcRequest {
             username: None,
             secret: None,
             uri,
+            req: None,
         }
     }
     async fn put(uri: FMCUri) -> Self {
@@ -25,6 +29,7 @@ impl FmcRequest {
             username: None,
             secret: None,
             uri,
+            req: None,
         }
     }
     async fn delete(uri: FMCUri) -> Self {
@@ -33,15 +38,21 @@ impl FmcRequest {
             username: None,
             secret: None,
             uri,
+            req: None,
         }
     }
 
     async fn http_basic(self, username: &str, password: &str) -> Self {
+        let auth_string =
+            vec![username.to_string(), ":".to_string(), password.to_string()].join("");
+        let auth_b64 = base64::encode(auth_string.as_bytes());
+
         FmcRequest {
             method: self.method,
             username: Some(username.to_string()),
-            secret: Some(AuthCreds::HTTPBasic(password.to_string())),
+            secret: Some(AuthCreds::HTTPBasic(auth_b64)),
             uri: self.uri,
+            req: None,
         }
     }
 
@@ -51,6 +62,7 @@ impl FmcRequest {
             username: self.username,
             secret: Some(AuthCreds::XAuthAccessToken(access_token.to_string())),
             uri: self.uri,
+            req: None,
         }
     }
 
@@ -60,55 +72,69 @@ impl FmcRequest {
             username: self.username,
             secret: Some(AuthCreds::XAuthRefreshToken(refresh_token.to_string())),
             uri: self.uri,
+            req: None,
         }
     }
 
-    async fn build(self) -> Request<()> {
+    async fn build(self) -> Self {
         let mut req = Request::builder()
-            .uri(self.uri)
+            .uri(&self.uri)
             .version(Version::HTTP_11)
             .header("Content-Type", "application/json");
 
-        req = match self.method {
-            GET => req.method("GET"),
-            POST => req.method("POST"),
-            PUT => req.method("PUT"),
-            DELETE => req.method("DELETE"),
+        req = match &self.method {
+            RequestType::GET => req.method("GET"),
+            RequestType::POST => req.method("POST"),
+            RequestType::PUT => req.method("PUT"),
+            RequestType::DELETE => req.method("DELETE"),
         };
 
-        req = match self.secret {
-            Some(AuthCreds::HTTPBasic(secret)) => req.header("HTTP-Basic-Auth", secret),
+        req = match &self.secret {
+            Some(AuthCreds::HTTPBasic(secret)) => {
+                req.header("Authorization", ["Basic", secret].join(" "))
+            }
             Some(AuthCreds::XAuthAccessToken(secret)) => req.header("X-Auth-Access-Token", secret),
             Some(AuthCreds::XAuthRefreshToken(secret)) => req.header("X-Auth-Access-Token", secret),
             None => panic!("Missing auth credentials"), // FIX/HANDLE
         };
 
-        req.body(()).unwrap() // FIX
+        let req = req.body(hyper::Body::empty()).unwrap(); // FIX
+
+        FmcRequest {
+            method: self.method,
+            username: self.username,
+            secret: self.secret,
+            uri: self.uri,
+            req: Some(req),
+        }
+    }
+
+    async fn send(self) -> hyper::client::ResponseFuture {
+        let https = HttpsConnector::new();
+        let client = Client::builder().build::<_, hyper::Body>(https);
+        client.request(self.req.unwrap()) //handle
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::super::Uuid;
+    use super::*; // From crate: Uuid
 
     #[tokio::test]
     async fn fn_new_request() {
-        let dom_uuid = uuid::Uuid::parse_str("f3b4958c-52a1-11e7-802a-010203040506").unwrap();
-        let api_path = FmcApi::Deployment.path_string("10.0.0.1", dom_uuid).await;
-        let req = FmcRequest::get(api_path)
+        let api_path = FmcApi::HttpBasicAuth
+            .path_string("10.17.11.151", None)
+            .await;
+        let req = FmcRequest::post(api_path)
             .await
-            .http_basic("shane", "hulk")
+            .http_basic("apiuser", "vZZ90-8D1z")
             .await
-            .build();
-        println!("{:#?}", req.await);
+            .build()
+            .await
+            .send()
+            .await;
 
-        let dom_uuid = uuid::Uuid::parse_str("f3b4958c-52a1-11e7-802a-010203040506").unwrap();
-        let api_path = FmcApi::Object.path_string("10.0.0.1", dom_uuid).await;
-        let req = FmcRequest::get(api_path)
-            .await
-            .xauth_access_token("shanehulk")
-            .await
-            .build();
         println!("{:#?}", req.await);
     }
 }
