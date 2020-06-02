@@ -1,6 +1,6 @@
-use super::HeaderValue;             // From hyper
+use super::HeaderValue; // From hyper
 use super::Uuid;
-use super::{FMCUri, Request};       // Local
+use super::{FMCUri, Request}; // Local
 
 #[derive(Debug)]
 pub(super) enum RequestType {
@@ -25,7 +25,7 @@ pub(super) struct FmcRequest {
     pub(super) uri: Option<FMCUri>,
     pub(super) req: Option<Request<hyper::Body>>,
     pub(super) is_auth: bool,
-    pub(super) sess_ids: SessionIDs
+    pub(super) sess_ids: SessionIDs,
 }
 
 #[derive(Debug)]
@@ -33,8 +33,5 @@ pub(super) struct SessionIDs {
     pub(super) xa_token: Option<String>,
     pub(super) xar_token: Option<String>,
     pub(super) dom_uuid: Option<Uuid>,
-    pub(super) time: Option<String>
+    pub(super) time: Option<String>,
 }
-
-
-

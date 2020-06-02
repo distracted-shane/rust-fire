@@ -34,13 +34,13 @@ mod tests {
         //Test each enum variant
         let dom_uuid = Uuid::parse_str("f3b4958c-52a1-11e7-802a-010203040506").unwrap();
 
-        assert_eq!(FmcApi::Devices.path_string("ciscofmc.local", Some(dom_uuid)).await, 
+        assert_eq!(FmcApi::Devices.path_string("ciscofmc.local", Some(dom_uuid)).await,
             "https://ciscofmc.local:443/api/fmc_config/v1/domain/f3b4958c-52a1-11e7-802a-010203040506/devices");
-        assert_eq!(FmcApi::Object.path_string("cisco_fmc.xyz", Some(dom_uuid)).await, 
+        assert_eq!(FmcApi::Object.path_string("cisco_fmc.xyz", Some(dom_uuid)).await,
             "https://cisco_fmc.xyz:443/api/fmc_config/v1/domain/f3b4958c-52a1-11e7-802a-010203040506/object");
         assert_eq!(FmcApi::PolicyAssignments.path_string("fmc.abc", Some(dom_uuid)).await,
             "https://fmc.abc:443/api/fmc_config/v1/domain/f3b4958c-52a1-11e7-802a-010203040506/assignments/policyassignments");
-        assert_eq!(FmcApi::DeviceHAPairs.path_string("1.1.1.1", Some(dom_uuid)).await, 
+        assert_eq!(FmcApi::DeviceHAPairs.path_string("1.1.1.1", Some(dom_uuid)).await,
             "https://1.1.1.1:443/api/fmc_config/v1/domain/f3b4958c-52a1-11e7-802a-010203040506/devicehapairs/ftddevicehapairs");
         assert_eq!(FmcApi::Integration.path_string("10.0.0.5", Some(dom_uuid)).await,
             "https://10.0.0.5:443/api/fmc_config/v1/domain/f3b4958c-52a1-11e7-802a-010203040506/integration");
@@ -48,7 +48,7 @@ mod tests {
             "https://fmc.test.domain:443/api/fmc_config/v1/domain/f3b4958c-52a1-11e7-802a-010203040506/devicegroups/devicegrouprecords");
         assert_eq!(FmcApi::TaskStatuses.path_string("lily123.cx", Some(dom_uuid)).await,
             "https://lily123.cx:443/api/fmc_config/v1/domain/f3b4958c-52a1-11e7-802a-010203040506/taskstatuses");
-        assert_eq!(FmcApi::DeviceClusters.path_string("AaBbCc.zzz", Some(dom_uuid)).await,    
+        assert_eq!(FmcApi::DeviceClusters.path_string("AaBbCc.zzz", Some(dom_uuid)).await,
             "https://AaBbCc.zzz:443/api/fmc_config/v1/domain/f3b4958c-52a1-11e7-802a-010203040506/devices");
         assert_eq!(FmcApi::Object.path_string("fmc-01.sw.local", Some(dom_uuid)).await,
             "https://fmc-01.sw.local:443/api/fmc_config/v1/domain/f3b4958c-52a1-11e7-802a-010203040506/object");

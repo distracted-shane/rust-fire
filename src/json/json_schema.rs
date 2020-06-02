@@ -82,8 +82,8 @@ pub(super) mod core {
 }
 
 pub(crate) mod devices {
-    use serde::Deserialize;
     use super::core;
+    use serde::Deserialize;
 
     // /api/fmc_config/v1/domain/{domainUUID}/devices/devicerecords
     #[derive(Deserialize, Debug)]
