@@ -15,21 +15,21 @@ Example:
 ```
 // Create a new request (and keep it around using next())
 async fn fn_new_request() {
-    let (resp, next_req) = FmcRequest::new()          .await  // (response to this request, struct for next request) 
-        .post("10.14.31.111", FmcApi::HttpBasicAuth)  .await  // (POST request to this IP, correct API URI for HTTP auth)
-        .http_basic("apiusr", "xefZ80-8Dfe1z")        .await  // (HTTP Basic auth credentials)
-        .build()                                      .await  // Build the request
-        .next()                                       .await; // Send request; Save response & struct as (resp, next_req)
+  let (resp, next_req) = FmcRequest::new().await        // (resp to this request, struct for the next) 
+    .post("10.14.31.111", FmcApi::HttpBasicAuth).await  // (POST req to an IP w/ API URI for HTTP auth)
+    .http_basic("apiusr", "xefZ80-8Dfe1z").await        // (HTTP Basic auth credentials)
+    .build().await                                      // Build the request
+    .next().await;                                      // Send request; Save response & rew struct
+    
+  let resp = next_req.get("10.14.31.111", FmcApi::Devices).await  // reuse request struct
+    .xauth_access_token(None).await                               // Auth'd (token now in struct) so None
+    .build().await                                                // Build
+    .send().await;                                                // Send(). Unlike next(), we can't reuse
 
-    let resp = next_req.get("10.14.31.111", FmcApi::Devices)    .await  // reuse request struct
-            .xauth_access_token(None)                           .await  // We auth'd & token is in struct, so None
-            .build()                                            .await  // Build
-            .send()                                             .await; // Send. Unlike next, we can't reuse w/ send()
+  let body = collect_body(resp).await;                            // Helper fn to collect the raw data into String
 
-        let body = collect_body(resp).await;                            // Helper fn to collect the raw data into String
-
-        let json: devices::DeviceRecords = serde_json::from_str(&body).unwrap();     // Parse JSON to matching struct
-        println!("{:#?}", json);                                                     // Print the response
+  let json: devices::DeviceRecords = serde_json::from_str(&body).unwrap();     // Parse JSON to matching struct
+  println!("{:#?}", json);                                                     // Print the response
 ```
 
 Output:
