@@ -2,10 +2,14 @@ use super::uri_schema::FmcApi;
 use super::{FMCUri, Uuid}; // Local
 
 impl FmcApi {
-    pub(super) async fn path_vec(self, address: &str, dom_uuid: Option<Uuid>) -> Vec<String> {
+    pub(super) async fn path_vec(
+        self,
+        address: Option<&str>,
+        dom_uuid: Option<Uuid>,
+    ) -> Vec<String> {
         let mut path: Vec<String> = Vec::new();
         path.push("https://".to_string());
-        path.push(address.to_string());
+        path.push(address.unwrap().to_string());
         path.push(":443".to_string());
 
         let dom_uuid = match dom_uuid {
@@ -107,7 +111,7 @@ impl FmcApi {
         }
     }
 
-    pub(crate) async fn path_string(self, address: &str, dom_uuid: Option<Uuid>) -> FMCUri {
+    pub(crate) async fn path_string(self, address: Option<&str>, dom_uuid: Option<Uuid>) -> FMCUri {
         self.path_vec(address, dom_uuid).await.join("")
     }
 }

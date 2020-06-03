@@ -22,6 +22,7 @@ pub(super) struct FmcRequest {
     pub(super) method: Option<RequestType>,
     pub(super) username: Option<String>,
     pub(super) secret: Option<AuthCreds>,
+    pub(super) host: Option<String>,
     pub(super) uri: Option<FMCUri>,
     pub(super) req: Option<Request<hyper::Body>>,
     pub(super) is_auth: bool,

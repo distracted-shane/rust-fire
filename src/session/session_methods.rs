@@ -12,61 +12,106 @@ impl FmcRequest {
             method: None,
             username: None,
             secret: None,
+            host: None,
             uri: None,
             req: None,
             is_auth: false,
             sess_ids: SessionIDs::new(),
         }
     }
-    async fn get(self, host: &str, req_type: FmcApi) -> Self {
-        let api_path = req_type.path_string(&host, self.sess_ids.dom_uuid).await;
 
+    async fn host(self, host: &str) -> Self {
+        FmcRequest {
+            method: self.method,
+            username: self.username,
+            secret: self.secret,
+            host: Some(String::from(host)),
+            uri: self.uri,
+            req: None,
+            is_auth: false,
+            sess_ids: self.sess_ids,
+        }
+    }
+
+    async fn get(self, req_type: FmcApi) -> Self {
+        let api_path = match &self.host {
+            Some(host) => {
+                req_type
+                    .path_string(Some(&host), self.sess_ids.dom_uuid)
+                    .await
+            }
+            None => panic!("No host specified!"),
+        };
         FmcRequest {
             method: Some(RequestType::GET),
             username: self.username,
             secret: self.secret,
+            host: self.host, // Add check for empty field
             uri: Some(api_path),
             req: None,
             is_auth: false,
-            sess_ids: SessionIDs::new(),
+            sess_ids: self.sess_ids,
         }
     }
-    async fn post(self, host: &str, req_type: FmcApi) -> Self {
-        let api_path = req_type.path_string(&host, self.sess_ids.dom_uuid).await;
-
+    async fn post(self, req_type: FmcApi) -> Self {
+        let api_path = match &self.host {
+            Some(host) => {
+                req_type
+                    .path_string(Some(&host), self.sess_ids.dom_uuid)
+                    .await
+            }
+            None => panic!("No host specified!"),
+        };
         FmcRequest {
             method: Some(RequestType::POST),
             username: self.username,
             secret: self.secret,
+            host: self.host, // Add check for empty field
             uri: Some(api_path),
             req: None,
             is_auth: false,
-            sess_ids: SessionIDs::new(),
+            sess_ids: self.sess_ids,
         }
     }
-    async fn put(self, host: &str, req_type: FmcApi) -> Self {
-        let api_path = req_type.path_string(&host, self.sess_ids.dom_uuid).await;
 
+    async fn put(self, req_type: FmcApi) -> Self {
+        let api_path = match &self.host {
+            Some(host) => {
+                req_type
+                    .path_string(Some(&host), self.sess_ids.dom_uuid)
+                    .await
+            }
+            None => panic!("No host specified!"),
+        };
         FmcRequest {
             method: Some(RequestType::PUT),
             username: self.username,
             secret: self.secret,
+            host: self.host, // Add check for empty field
             uri: Some(api_path),
             req: None,
             is_auth: false,
-            sess_ids: SessionIDs::new(),
+            sess_ids: self.sess_ids,
         }
     }
-    async fn delete(self, host: &str, req_type: FmcApi) -> Self {
-        let api_path = req_type.path_string(&host, self.sess_ids.dom_uuid).await;
+    async fn delete(self, req_type: FmcApi) -> Self {
+        let api_path = match &self.host {
+            Some(host) => {
+                req_type
+                    .path_string(Some(&host), self.sess_ids.dom_uuid)
+                    .await
+            }
+            None => panic!("No host specified!"),
+        };
         FmcRequest {
             method: Some(RequestType::DELETE),
             username: self.username,
             secret: self.secret,
+            host: self.host, // Add check for empty field
             uri: Some(api_path),
             req: None,
             is_auth: false,
-            sess_ids: SessionIDs::new(),
+            sess_ids: self.sess_ids,
         }
     }
 
@@ -79,6 +124,7 @@ impl FmcRequest {
             method: self.method,
             username: Some(username.to_string()),
             secret: Some(AuthCreds::HTTPBasic(auth_b64)),
+            host: self.host,
             uri: self.uri,
             req: None,
             is_auth: true,
@@ -92,6 +138,7 @@ impl FmcRequest {
                 method: self.method,
                 username: self.username,
                 secret: Some(AuthCreds::XAuthAccessToken(token)),
+                host: self.host,
                 uri: self.uri,
                 req: None,
                 is_auth: self.is_auth,
@@ -103,7 +150,8 @@ impl FmcRequest {
                 FmcRequest {
                     method: self.method,
                     username: self.username,
-                    secret: self.secret, //you're better than this, Shane
+                    secret: self.secret,
+                    host: self.host,
                     uri: self.uri,
                     req: None,
                     is_auth: self.is_auth,
@@ -118,6 +166,7 @@ impl FmcRequest {
             method: self.method,
             username: self.username,
             secret: Some(AuthCreds::XAuthRefreshToken(refresh_token.to_string())),
+            host: self.host,
             uri: self.uri,
             req: None,
             is_auth: self.is_auth,
@@ -126,7 +175,7 @@ impl FmcRequest {
     }
 
     async fn build(self) -> Self {
-        let uri = self.uri.unwrap().clone();
+        let uri = self.uri.unwrap();
 
         let mut req = Request::builder()
             .uri(&uri)
@@ -156,6 +205,7 @@ impl FmcRequest {
             method: self.method,
             username: self.username,
             secret: self.secret,
+            host: self.host,
             uri: Some(uri),
             req: Some(req),
             is_auth: self.is_auth,
@@ -235,6 +285,7 @@ impl FmcRequest {
                 secret: Some(AuthCreds::XAuthAccessToken(
                     sess_ids.xa_token.clone().unwrap(),
                 )),
+                host: self.host,
                 uri: None,
                 req: None,
                 is_auth: false,
@@ -262,9 +313,11 @@ mod tests {
 
     #[tokio::test]
     async fn fn_new_request() {
-        let (resp, new_req) = FmcRequest::new()
+        let (_resp, new_req) = FmcRequest::new()
             .await
-            .post("10.17.11.151", FmcApi::HttpBasicAuth)
+            .host("10.17.11.151")
+            .await
+            .post(FmcApi::HttpBasicAuth)
             .await
             .http_basic("apiuser", "vZZ90-8D1z")
             .await
@@ -276,7 +329,7 @@ mod tests {
         println!("{:#?}", new_req);
 
         let resp = new_req
-            .get("10.17.11.151", FmcApi::Devices)
+            .get(FmcApi::Devices)
             .await
             .xauth_access_token(None)
             .await

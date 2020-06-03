@@ -15,12 +15,13 @@ Example: Authenticating to FMC and polling devices.
 ```
 // Create a new request (and keep it around using next())
 let (resp, next_req) = FmcRequest::new().await     // (resp to this request, struct for the next) 
-  .post("10.1.1.1", FmcApi::HttpBasicAuth).await   // (POST req to an IP w/ API URI for HTTP auth)
+  .host("10.0.1.121").await                        // Specify URL
+  .post(FmcApi::HttpBasicAuth).await               // (POST req to the API URI for HTTP auth)
   .http_basic("apiusr", "xefZ80-8Dfe1z").await     // (HTTP Basic auth credentials)
   .build().await                                   // Build the request
   .next().await;                                   // Send request; Save response & rew struct
 
-let resp = next_req.get("10.1.1.1", FmcApi::Devices).await   // reuse request struct
+let resp = next_req.get(FmcApi::Devices).await               // reuse struct for GET request
   .xauth_access_token(None).await                            // Auth'd (token now in struct) so None
   .build().await                                             // Build
   .send().await;                                             // Send(). Unlike next(), we can't reuse
