@@ -12,3 +12,15 @@ async fn collect_body(body: hyper::client::ResponseFuture) -> String {
 
     String::from(text)
 }
+
+async fn hdr_string(hdr: Option<HeaderValue>) -> String {
+    let hdr_val = match hdr {
+        Some(s) => s,
+        None => return String::from("Header not found"),
+    };
+
+    match hdr_val.to_str() {
+        Ok(val_str) => String::from(val_str),
+        Err(e) => String::from("Error parsing header"),
+    }
+}

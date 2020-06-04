@@ -8,6 +8,8 @@ edition = "2018"
 
 [dependencies]
 base64 = "0.12.1"
+chrono = "0.4.11"
+http = "0.2"
 hyper = "0.13.6"
 hyper-tls = "0.4.1"
 tokio = { version = "0.2.21", features = ["full"] }

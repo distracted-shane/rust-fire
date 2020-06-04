@@ -1,184 +1,98 @@
 use super::HttpsConnector;
 use super::Uuid;
-use super::{Client, Request, Version}; // From crate: Hyper // From crate: Hyper-TLS
+use super::{Client, HeaderMap, Request, Version}; // From crate: Hyper // From crate: Hyper-TLS
+use super::{DateTime, Duration, FixedOffset, Utc};
 
 use super::super::json::json_schema::devices;
-use super::{collect_body, session_schema, FMCUri, FmcApi}; // Local
-use session_schema::{AuthCreds, FmcRequest, RequestType, SessionIDs}; // Local
+use super::{collect_body, hdr_string, session_schema, FMCUri, FmcApi}; // Local
+use session_schema::{FmcRequest, RequestType, SessionCreds}; // Local
 
-impl FmcRequest {
-    async fn new() -> Self {
+impl<'a> FmcRequest<'a> {
+    async fn new() -> FmcRequest<'a> {
         FmcRequest {
             method: None,
-            username: None,
-            secret: None,
             host: None,
             uri: None,
             req: None,
-            is_auth: false,
-            sess_ids: SessionIDs::new(),
+            is_new_auth: false,
+            sess_creds: SessionCreds::new().await,
         }
     }
 
-    async fn host(self, host: &str) -> Self {
-        FmcRequest {
-            method: self.method,
-            username: self.username,
-            secret: self.secret,
-            host: Some(String::from(host)),
-            uri: self.uri,
-            req: None,
-            is_auth: false,
-            sess_ids: self.sess_ids,
-        }
+    async fn host(mut self, host: &'a str) -> FmcRequest<'a> {
+        self.host = Some(host);
+        self
     }
 
-    async fn get(self, req_type: FmcApi) -> Self {
+    async fn get(mut self, req_type: FmcApi) -> FmcRequest<'a> {
         let api_path = match &self.host {
             Some(host) => {
                 req_type
-                    .path_string(Some(&host), self.sess_ids.dom_uuid)
+                    .path_string(Some(&host), self.sess_creds.dom_uuid)
                     .await
             }
             None => panic!("No host specified!"),
         };
-        FmcRequest {
-            method: Some(RequestType::GET),
-            username: self.username,
-            secret: self.secret,
-            host: self.host, // Add check for empty field
-            uri: Some(api_path),
-            req: None,
-            is_auth: false,
-            sess_ids: self.sess_ids,
-        }
+
+        self.method = Some(RequestType::GET);
+        self.uri = Some(api_path);
+        self
     }
-    async fn post(self, req_type: FmcApi) -> Self {
+    //pub fn arg<'a>(&'a mut self, arg: String) -> &'a mut Command
+    async fn post(mut self, req_type: FmcApi) -> FmcRequest<'a> {
         let api_path = match &self.host {
             Some(host) => {
                 req_type
-                    .path_string(Some(&host), self.sess_ids.dom_uuid)
+                    .path_string(Some(&host), self.sess_creds.dom_uuid)
                     .await
             }
             None => panic!("No host specified!"),
         };
-        FmcRequest {
-            method: Some(RequestType::POST),
-            username: self.username,
-            secret: self.secret,
-            host: self.host, // Add check for empty field
-            uri: Some(api_path),
-            req: None,
-            is_auth: false,
-            sess_ids: self.sess_ids,
-        }
+
+        self.method = Some(RequestType::POST);
+        self.uri = Some(api_path);
+        self
     }
 
-    async fn put(self, req_type: FmcApi) -> Self {
+    async fn put(mut self, req_type: FmcApi) -> FmcRequest<'a> {
         let api_path = match &self.host {
             Some(host) => {
                 req_type
-                    .path_string(Some(&host), self.sess_ids.dom_uuid)
+                    .path_string(Some(&host), self.sess_creds.dom_uuid)
                     .await
             }
             None => panic!("No host specified!"),
         };
-        FmcRequest {
-            method: Some(RequestType::PUT),
-            username: self.username,
-            secret: self.secret,
-            host: self.host, // Add check for empty field
-            uri: Some(api_path),
-            req: None,
-            is_auth: false,
-            sess_ids: self.sess_ids,
-        }
+        self.method = Some(RequestType::PUT);
+        self.uri = Some(api_path);
+        self
     }
-    async fn delete(self, req_type: FmcApi) -> Self {
+
+    async fn delete(mut self, req_type: FmcApi) -> FmcRequest<'a> {
         let api_path = match &self.host {
             Some(host) => {
                 req_type
-                    .path_string(Some(&host), self.sess_ids.dom_uuid)
+                    .path_string(Some(&host), self.sess_creds.dom_uuid)
                     .await
             }
             None => panic!("No host specified!"),
         };
-        FmcRequest {
-            method: Some(RequestType::DELETE),
-            username: self.username,
-            secret: self.secret,
-            host: self.host, // Add check for empty field
-            uri: Some(api_path),
-            req: None,
-            is_auth: false,
-            sess_ids: self.sess_ids,
-        }
+        self.method = Some(RequestType::DELETE);
+        self.uri = Some(api_path);
+        self
     }
 
-    async fn http_basic(self, username: &str, password: &str) -> Self {
-        let auth_string =
-            vec![username.to_string(), ":".to_string(), password.to_string()].join("");
-        let auth_b64 = base64::encode(auth_string.as_bytes());
-
-        FmcRequest {
-            method: self.method,
-            username: Some(username.to_string()),
-            secret: Some(AuthCreds::HTTPBasic(auth_b64)),
-            host: self.host,
-            uri: self.uri,
-            req: None,
-            is_auth: true,
-            sess_ids: self.sess_ids,
-        }
+    async fn http_basic(mut self, username: &str, password: &str) -> FmcRequest<'a> {
+        self.sess_creds.http_basic_auth(username, password);
+        self.is_new_auth = true;
+        self
     }
 
-    async fn xauth_access_token(self, access_token: Option<String>) -> Self {
-        match access_token {
-            Some(token) => FmcRequest {
-                method: self.method,
-                username: self.username,
-                secret: Some(AuthCreds::XAuthAccessToken(token)),
-                host: self.host,
-                uri: self.uri,
-                req: None,
-                is_auth: self.is_auth,
-                sess_ids: self.sess_ids,
-            },
-            None => {
-                // handle missing
-                let stoken = self.sess_ids.xa_token.clone();
-                FmcRequest {
-                    method: self.method,
-                    username: self.username,
-                    secret: self.secret,
-                    host: self.host,
-                    uri: self.uri,
-                    req: None,
-                    is_auth: self.is_auth,
-                    sess_ids: self.sess_ids,
-                }
-            }
-        }
-    }
-
-    async fn xauth_refresh_token(self, refresh_token: &str) -> Self {
-        FmcRequest {
-            method: self.method,
-            username: self.username,
-            secret: Some(AuthCreds::XAuthRefreshToken(refresh_token.to_string())),
-            host: self.host,
-            uri: self.uri,
-            req: None,
-            is_auth: self.is_auth,
-            sess_ids: self.sess_ids,
-        }
-    }
-
-    async fn build(self) -> Self {
-        let uri = self.uri.unwrap();
+    async fn build(mut self) -> FmcRequest<'a> {
+        let uri = self.uri.clone().unwrap();
 
         let mut req = Request::builder()
-            .uri(&uri)
+            .uri(uri)
             .version(Version::HTTP_11)
             .header("Content-Type", "application/json");
 
@@ -190,27 +104,21 @@ impl FmcRequest {
             None => panic!("No method defined"), //handle!
         };
 
-        req = match &self.secret {
-            Some(AuthCreds::HTTPBasic(secret)) => {
-                req.header("Authorization", ["Basic", secret].join(" "))
+        req = match &self.is_new_auth {
+            true => {
+                let b64_string = self.sess_creds.api_basic_auth.clone().unwrap();
+                req.header("Authorization", ["Basic", &b64_string].join(" "))
             }
-            Some(AuthCreds::XAuthAccessToken(secret)) => req.header("X-Auth-Access-Token", secret),
-            Some(AuthCreds::XAuthRefreshToken(secret)) => req.header("X-Auth-Access-Token", secret),
-            None => panic!("Missing auth credentials"), // FIX/HANDLE
+            false => {
+                let token_string = self.sess_creds.xa_token.clone().unwrap();
+                req.header("X-Auth-Access-Token", token_string)
+            }
         };
 
         let req = req.body(hyper::Body::empty()).unwrap(); // FIX
 
-        FmcRequest {
-            method: self.method,
-            username: self.username,
-            secret: self.secret,
-            host: self.host,
-            uri: Some(uri),
-            req: Some(req),
-            is_auth: self.is_auth,
-            sess_ids: self.sess_ids,
-        }
+        self.req = Some(req);
+        self
     }
 
     /// Terminates the builder chain by sending the
@@ -226,83 +134,84 @@ impl FmcRequest {
     /// a response and new struct with authentication credentials intact.
     /// Deconstruct with let (resp, req) = FmcRequest::...
     /// Useful series of requests while retaining authentication credentials.
-    async fn next(self) -> (hyper::body::Body, Self) {
+    async fn next(mut self) -> (hyper::body::Body, FmcRequest<'a>) {
         let https = HttpsConnector::new();
         let client = Client::builder().build::<_, hyper::Body>(https);
 
         let resp = client.request(self.req.unwrap()); //handle error
-        let (mut resp_headers, resp_body) = resp.await.unwrap().into_parts();
+        let (resp_headers, resp_body) = resp.await.unwrap().into_parts();
+        let mut resp_headers = resp_headers.headers;
 
-        let sess_ids = match self.is_auth {
-            true => SessionIDs {
-                xa_token: Some(
-                    resp_headers
-                        .headers
-                        .remove("x-auth-access-token")
-                        .unwrap()
-                        .to_str()
-                        .unwrap()
-                        .to_string(),
-                ),
-                xar_token: Some(
-                    resp_headers
-                        .headers
-                        .remove("x-auth-refresh-token")
-                        .unwrap()
-                        .to_str()
-                        .unwrap()
-                        .to_string(),
-                ),
-                dom_uuid: Some(
-                    Uuid::parse_str(
-                        resp_headers
-                            .headers
-                            .remove("domain_uuid")
-                            .unwrap()
-                            .to_str()
-                            .unwrap(),
-                    )
-                    .unwrap(),
-                ),
-                time: Some(
-                    resp_headers
-                        .headers
-                        .remove("date")
-                        .unwrap()
-                        .to_str()
-                        .unwrap()
-                        .to_string(),
-                ),
-            },
-            false => self.sess_ids,
-        };
-
+        if self.is_new_auth {}
+        self.sess_creds.record_tokens(&mut resp_headers).await;
         (
             resp_body,
             FmcRequest {
                 method: None,
-                username: self.username,
-                secret: Some(AuthCreds::XAuthAccessToken(
-                    sess_ids.xa_token.clone().unwrap(),
-                )),
                 host: self.host,
                 uri: None,
                 req: None,
-                is_auth: false,
-                sess_ids,
+                is_new_auth: false,
+                sess_creds: self.sess_creds,
             },
         )
     }
+
+    /// Terminates the builder chain and stores the fiendish creations
+    async fn store(self) -> FmcRequest<'a> {
+        self
+    }
 }
 
-impl SessionIDs {
-    fn new() -> Self {
-        SessionIDs {
+impl<'a> SessionCreds {
+    async fn new() -> Self {
+        SessionCreds {
+            api_username: None,
+            api_password: None,
+            api_basic_auth: None,
             xa_token: None,
             xar_token: None,
             dom_uuid: None,
-            time: None,
+            token_issue_time: None,
+            token_expires: None,
         }
+    }
+
+    async fn http_basic_auth(&mut self, username: &str, password: &str) {
+        let auth_str = vec![username, ":", password].join("");
+        let auth_b64 = base64::encode(auth_str.as_bytes());
+
+        self.api_username = Some(username.to_string());
+        self.api_password = Some(password.to_string());
+        self.api_basic_auth = Some(auth_b64);
+    }
+
+    async fn record_tokens(&mut self, headers: &mut HeaderMap) {
+        let xa_token = hdr_string(headers.remove("x-auth-access-token")).await;
+        let xar_token = hdr_string(headers.remove("x-auth-refresh-token")).await;
+
+        let dom_uuid_str = hdr_string(headers.remove("domain_uuid")).await;
+        let dom_uuid = Uuid::parse_str(&dom_uuid_str).unwrap();
+
+        let time_str = hdr_string(headers.remove("date")).await;
+        let time = DateTime::parse_from_rfc2822(&time_str)
+            .unwrap()
+            .with_timezone(&Utc);
+
+        let thirty_mins = Duration::minutes(30);
+        let expiry = time + thirty_mins;
+
+        self.xa_token = Some(xa_token);
+        self.xar_token = Some(xar_token);
+        self.dom_uuid = Some(dom_uuid);
+        self.token_issue_time = Some(time);
+        self.token_expires = Some(expiry);
+    }
+
+    fn token_age(&self) -> i64 {
+        let right_now: DateTime<Utc> = Utc::now();
+        let remainder = self.token_expires.unwrap() - right_now;
+        Duration::num_seconds(&remainder)
     }
 }
 
@@ -313,7 +222,7 @@ mod tests {
 
     #[tokio::test]
     async fn fn_new_request() {
-        let (_resp, new_req) = FmcRequest::new()
+        let (resp, new_req) = FmcRequest::new()
             .await
             .host("10.17.11.151")
             .await
@@ -326,21 +235,22 @@ mod tests {
             .next()
             .await;
 
-        println!("{:#?}", new_req);
+        println!("{:#?}", &new_req);
 
-        let resp = new_req
-            .get(FmcApi::Devices)
-            .await
-            .xauth_access_token(None)
-            .await
-            .build()
-            .await
-            .send()
-            .await;
+        println!("{:#?}", new_req.sess_creds.token_age());
+        // let resp = new_req
+        //     .get(FmcApi::Devices)
+        //     .await
+        //     .xauth_access_token(None)
+        //     .await
+        //     .build()
+        //     .await
+        //     .send()
+        //     .await;
 
-        let body = collect_body(resp).await;
+        // let body = collect_body(resp).await;
 
-        let json: devices::DeviceRecords = serde_json::from_str(&body).unwrap();
-        println!("{:#?}", json);
+        // let json: devices::DeviceRecords = serde_json::from_str(&body).unwrap();
+        // println!("{:#?}", json);
     }
 }
